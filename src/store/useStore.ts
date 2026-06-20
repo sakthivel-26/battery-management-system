@@ -735,10 +735,33 @@ export const useStore = create<AppState>()(
 
       initializeData: () => {
         const state = get();
+        
+        // Ensure default seed users exist and have passwords in local storage
+        let currentUsers = [...state.users];
+        let hasChanges = false;
+
+        seedUsers.forEach(seedUser => {
+          const index = currentUsers.findIndex(u => u.email.toLowerCase() === seedUser.email.toLowerCase());
+          if (index === -1) {
+            currentUsers.push(seedUser);
+            hasChanges = true;
+          } else {
+            // Ensure passwords and other seeded properties are up to date
+            if (!currentUsers[index].password || currentUsers[index].password !== seedUser.password) {
+              currentUsers[index] = { ...currentUsers[index], password: seedUser.password };
+              hasChanges = true;
+            }
+          }
+        });
+
+        if (hasChanges) {
+          set({ users: currentUsers });
+        }
+
         if (!state.isInitialized) {
           set({
             isInitialized: true,
-            users: seedUsers,
+            users: currentUsers.length > 0 ? currentUsers : seedUsers,
             categories: seedCategories,
             brands: seedBrands,
             products: seedProducts,
